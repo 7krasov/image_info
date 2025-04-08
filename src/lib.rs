@@ -55,6 +55,7 @@ impl InfoResult {
         self.error_code
     }
 
+    #[cfg(feature = "render")]
     pub fn render(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
@@ -190,6 +191,7 @@ fn should_return_error_on_fake_jpeg() {
 }
 
 #[test]
+#[cfg(feature = "render")]
 fn should_render_jpeg_ok() {
     let info = process_path("tests/fixtures/test1.jpg");
     let render = info.render();
@@ -198,6 +200,7 @@ fn should_render_jpeg_ok() {
 }
 
 #[test]
+#[cfg(feature = "render")]
 fn should_render_error_on_fake_jpeg() {
     let info = process_path("tests/fixtures/test1_html.jpg");
     let render = info.render();

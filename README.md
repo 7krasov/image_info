@@ -12,8 +12,16 @@ To get dimensions uses `imagesize` crate.
 
 
 ## Additional features
-- Reports error codes and error messages on failure;
-- Can render result as JSON string (useful for using from other languages as wrapper with binary code calling if the FFI is not an option).
+Reports error codes and error messages on failure.
+
+Can render result as JSON string (useful for using from other languages as wrapper with binary code calling
+if the FFI is not an option). If you don't need this feature you can disable it within your `Cargo.toml`:
+```toml
+
+[dependencies]
+image_info = {version = "0.2.0", default-features = false}
+
+```
 
 ## Usage
 
@@ -30,6 +38,11 @@ fn main() {
   };
 
   let info = image_info::process_path(path);
+  println!("{:?}", info);
+  //InfoResult { mime_type: Some("image/jpeg"), width: Some(1920), height: Some(1280), error_message: None, error_code: 0 }
+  //InfoResult { mime_type: Some("text/html"), width: None, height: None, error_message: Some("Error: mime type is not image/*: text/html"), error_code: 2 }
+
+  //if "render" feature is enabled
   println!("{}", info.render());
   //{"mime_type":"image/jpeg","width":7724,"height":5148,"error_message":null,"error_code":0}
   //{"mime_type":"text/html","width":null,"height":null,"error_message":"Error: mime type is not image/*: text/html","error_code":2}
