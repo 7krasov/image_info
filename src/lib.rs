@@ -175,8 +175,8 @@ fn should_extract_jpeg_from_fake_webp() {
 fn should_return_jpeg_ok() {
     let info = process_path("tests/fixtures/test1.jpg");
     assert_eq!(info.mime_type.unwrap(), "image/jpeg");
-    assert_eq!(info.width.unwrap(), 7724);
-    assert_eq!(info.height.unwrap(), 5148);
+    assert_eq!(info.width.unwrap(), 1920);
+    assert_eq!(info.height.unwrap(), 1280);
     assert_eq!(info.error_code, CODE_OK);
 }
 
@@ -193,7 +193,7 @@ fn should_return_error_on_fake_jpeg() {
 fn should_render_jpeg_ok() {
     let info = process_path("tests/fixtures/test1.jpg");
     let render = info.render();
-    let expected = r#"{"mime_type":"image/jpeg","width":7724,"height":5148,"error_message":null,"error_code":0}"#;
+    let expected = r#"{"mime_type":"image/jpeg","width":1920,"height":1280,"error_message":null,"error_code":0}"#;
     assert_eq!(render, expected);
 }
 
