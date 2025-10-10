@@ -5,6 +5,7 @@ edition = "2021"
 description = "A library to get base image information from a file"
 license = "MIT"
 repository = "https://github.com/7krasov/image_info"
+keywords = ["image", "metadata", "info", "json", "cli"]
 
 [dependencies]
 imagesize = "0.14.0"
