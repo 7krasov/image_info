@@ -129,8 +129,9 @@ pub fn process_path(path: &str, generate_phash: bool) -> InfoResult {
     if generate_phash {
         #[cfg(feature = "phash")]
         match mime_type.as_str() {
-            "image/heif" => {
-                #[cfg(feature = "phash-heif")]
+            // HEIF and AVIF are both decoded via libvips.
+            "image/heif" | "image/avif" => {
+                #[cfg(feature = "phash-vips")]
                 match calculate_phash_vips(path) {
                     Ok(phash) => info.set_phash(phash),
                     Err(e) => {
@@ -138,9 +139,12 @@ pub fn process_path(path: &str, generate_phash: bool) -> InfoResult {
                         info.set_error_code(CODE_PHASH_GENERATION_ERROR);
                     }
                 }
-                #[cfg(not(feature = "phash-heif"))]
+                #[cfg(not(feature = "phash-vips"))]
                 {
-                    info.set_error_message("phash-heif feature is not enabled".to_string());
+                    info.set_error_message(format!(
+                        "libvips backend (phash-vips feature) is not enabled for format {}",
+                        mime_type
+                    ));
                     info.set_error_code(CODE_PHASH_GENERATION_ERROR);
                 }
             }
@@ -195,7 +199,7 @@ fn calculate_phash(path: &str) -> Result<String, image::ImageError> {
 // libvips must be initialized once per process before any operation. Dropping
 // the `VipsApp` calls `vips_shutdown`, which would break later calls, so we keep
 // it alive for the whole process lifetime via `mem::forget`.
-#[cfg(feature = "phash-heif")]
+#[cfg(feature = "phash-vips")]
 fn ensure_vips_initialized() {
     use std::sync::Once;
     static INIT: Once = Once::new();
@@ -206,7 +210,7 @@ fn ensure_vips_initialized() {
     });
 }
 
-#[cfg(feature = "phash-heif")]
+#[cfg(feature = "phash-vips")]
 pub fn calculate_phash_vips(path: &str) -> Result<String, String> {
     ensure_vips_initialized();
 
