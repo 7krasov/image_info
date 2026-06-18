@@ -165,7 +165,11 @@ fn mime_type(file_path: &str) -> Result<String, String> {
 
 #[cfg(feature = "phash")]
 fn calculate_phash(path: &str) -> Result<String, image::ImageError> {
-    let image = image::open(path)?;
+    // let image = image::open(path)?;
+    // "image::open" pays attention on file extension.
+    // Any fake extension will break the image processing
+    let bytes = fs::read(path)?;
+    let image = image::load_from_memory(&bytes)?;
     let hasher = HasherConfig::new().to_hasher();
     let hash = hasher.hash_image(&image);
     Ok(hash.to_base64())
