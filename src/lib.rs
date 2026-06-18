@@ -2,17 +2,21 @@ use infer::Infer;
 // use serde_json::{Map, Number, Value};
 use serde::Serialize;
 use std::fs;
+#[cfg(feature = "phash")]
+use image_hasher::HasherConfig;
 
 pub const CODE_OK: i32 = 0;
 pub const CODE_BAD_ARGS: i32 = 1;
 pub const CODE_MIME_TYPE_ERROR: i32 = 2;
 pub const CODE_DIMENSIONS_ERROR: i32 = 3;
+pub const CODE_PHASH_GENERATION_ERROR: i32 = 4;
 
 #[derive(Serialize, Default, Debug)]
 pub struct InfoResult {
     mime_type: Option<String>,
     width: Option<u32>,
     height: Option<u32>,
+    phash: Option<String>,
     error_message: Option<String>,
     error_code: i32,
 }
@@ -24,11 +28,19 @@ impl InfoResult {
     }
 
     pub fn get_width(&self) -> Option<u32> {
-        self.width.clone()
+        self.width
     }
 
     pub fn get_height(&self) -> Option<u32> {
-        self.height.clone()
+        self.height
+    }
+
+    pub fn set_phash(&mut self, phash: String) {
+        self.phash = Some(phash);
+    }
+
+    pub fn get_phash(&self) -> Option<String> {
+        self.phash.clone()
     }
 
     fn set_mime_type(&mut self, mime_type: String) {
@@ -61,7 +73,7 @@ impl InfoResult {
     }
 }
 
-pub fn process_path(path: &str) -> InfoResult {
+pub fn process_path(path: &str, generate_phash: bool) -> InfoResult {
     let mut info = InfoResult::default();
 
     //check if the path exists
@@ -114,6 +126,17 @@ pub fn process_path(path: &str) -> InfoResult {
     // println!("{:?}", map);
     info.set_dimensions(size.width as u32, size.height as u32);
 
+    if generate_phash {
+        #[cfg(feature = "phash")]
+        match calculate_phash(path) {
+            Ok(phash) => info.set_phash(phash),
+            Err(e) => {
+                info.set_error_message(e.to_string());
+                info.set_error_code(CODE_PHASH_GENERATION_ERROR);
+            }
+        }
+    }
+
     info
 }
 
@@ -138,6 +161,14 @@ fn mime_type(file_path: &str) -> Result<String, String> {
         return Err("Error getting mime type".to_string());
     }
     Ok(mime.to_string())
+}
+
+#[cfg(feature = "phash")]
+fn calculate_phash(path: &str) -> Result<String, image::ImageError> {
+    let image = image::open(path)?;
+    let hasher = HasherConfig::new().to_hasher();
+    let hash = hasher.hash_image(&image);
+    Ok(hash.to_base64())
 }
 
 #[test]
@@ -174,7 +205,7 @@ fn should_extract_jpeg_from_fake_webp() {
 
 #[test]
 fn should_return_jpeg_ok() {
-    let info = process_path("tests/fixtures/test1.jpg");
+    let info = process_path("tests/fixtures/test1.jpg", false);
     assert_eq!(info.mime_type.unwrap(), "image/jpeg");
     assert_eq!(info.width.unwrap(), 1920);
     assert_eq!(info.height.unwrap(), 1280);
@@ -183,7 +214,7 @@ fn should_return_jpeg_ok() {
 
 #[test]
 fn should_return_error_on_fake_jpeg() {
-    let info = process_path("tests/fixtures/test1_html.jpg");
+    let info = process_path("tests/fixtures/test1_html.jpg", false);
     assert_eq!(info.mime_type.unwrap(), "text/html");
     assert_eq!(info.width, None);
     assert_eq!(info.height, None);
@@ -193,7 +224,7 @@ fn should_return_error_on_fake_jpeg() {
 #[test]
 #[cfg(feature = "render")]
 fn should_render_jpeg_ok() {
-    let info = process_path("tests/fixtures/test1.jpg");
+    let info = process_path("tests/fixtures/test1.jpg", false);
     let render = info.render();
     let expected = r#"{"mime_type":"image/jpeg","width":1920,"height":1280,"error_message":null,"error_code":0}"#;
     assert_eq!(render, expected);
@@ -202,8 +233,21 @@ fn should_render_jpeg_ok() {
 #[test]
 #[cfg(feature = "render")]
 fn should_render_error_on_fake_jpeg() {
-    let info = process_path("tests/fixtures/test1_html.jpg");
+    let info = process_path("tests/fixtures/test1_html.jpg", false);
     let render = info.render();
     let expected = r#"{"mime_type":"text/html","width":null,"height":null,"error_message":"Error: mime type is not image/*: text/html","error_code":2}"#;
     assert_eq!(render, expected);
+}
+
+#[test]
+#[cfg(feature = "render")]
+#[cfg(feature = "phash")]
+fn should_render_phash() {
+    let info = process_path("tests/fixtures/test1.jpg", true);
+    assert_eq!(info.mime_type.unwrap(), "image/jpeg");
+    assert_eq!(info.width.unwrap(), 1920);
+    assert_eq!(info.height.unwrap(), 1280);
+    assert!(info.phash.is_some());
+    assert_eq!(info.phash.unwrap(), "8Ph4HY9Tefw");
+    assert_eq!(info.error_code, CODE_OK);
 }
