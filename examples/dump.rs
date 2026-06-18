@@ -5,7 +5,7 @@
 //   cargo run --example dump --features phash,render
 
 fn main() {
-    for path in ["tests/fixtures/test1.jpg", "tests/fixtures/test1_html.jpg"] {
+    for path in ["tests/fixtures/test1.jpg", "tests/fixtures/test1_html.jpg", "tests/fixtures/test1.avif", "tests/fixtures/test3_heif.heif"] {
         // second parameter "true" stands for "generate phash"
         let info = image_info::process_path(path, true);
         println!("// {}", path);

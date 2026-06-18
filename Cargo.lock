@@ -423,12 +423,13 @@ dependencies = [
 
 [[package]]
 name = "image_info"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "image",
  "image_hasher",
  "imagesize",
  "infer",
+ "libvips",
  "serde",
  "serde_json",
  "tree_magic_mini",
@@ -521,6 +522,16 @@ checksum = "a9fd2f41a1cba099f79a0b6b6c35656cf7c03351a7bae8ff0f28f25270f929d2"
 dependencies = [
  "arbitrary",
  "cc",
+]
+
+[[package]]
+name = "libvips"
+version = "1.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05d8a51f8e3d2caf42ca32a3d93a21a2983452aa732e34430e41f4c632eeb4f4"
+dependencies = [
+ "num-derive",
+ "num-traits",
 ]
 
 [[package]]

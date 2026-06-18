@@ -20,9 +20,23 @@ if the FFI is not an option). If you don't need this feature you can disable it 
 ```toml
 
 [dependencies]
-image_info = {version = "0.2.0", default-features = false}
+image_info = {version = "0.3.1", default-features = false}
 
 ```
+
+AVIF format support
+```toml
+[dependencies]
+image_info = {version = "0.3.1", features = ["phash-avif"]}
+```
+
+HEIF format support
+```toml
+[dependencies]
+image_info = {version = "0.3.1", features = ["phash-heif"]}
+```
+
+*Make sure you have installed appropriate libraries!*
 
 ## Usage
 

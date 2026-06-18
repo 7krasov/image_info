@@ -128,12 +128,29 @@ pub fn process_path(path: &str, generate_phash: bool) -> InfoResult {
 
     if generate_phash {
         #[cfg(feature = "phash")]
-        match calculate_phash(path) {
-            Ok(phash) => info.set_phash(phash),
-            Err(e) => {
-                info.set_error_message(e.to_string());
-                info.set_error_code(CODE_PHASH_GENERATION_ERROR);
+        match mime_type.as_str() {
+            "image/heif" => {
+                #[cfg(feature = "phash-heif")]
+                match calculate_phash_vips(path) {
+                    Ok(phash) => info.set_phash(phash),
+                    Err(e) => {
+                        info.set_error_message(e);
+                        info.set_error_code(CODE_PHASH_GENERATION_ERROR);
+                    }
+                }
+                #[cfg(not(feature = "phash-heif"))]
+                {
+                    info.set_error_message("phash-heif feature is not enabled".to_string());
+                    info.set_error_code(CODE_PHASH_GENERATION_ERROR);
+                }
             }
+            _ => match calculate_phash(path) {
+                Ok(phash) => info.set_phash(phash),
+                Err(e) => {
+                    info.set_error_message(e.to_string());
+                    info.set_error_code(CODE_PHASH_GENERATION_ERROR);
+                }
+            },
         }
     }
 
@@ -172,6 +189,45 @@ fn calculate_phash(path: &str) -> Result<String, image::ImageError> {
     let image = image::load_from_memory(&bytes)?;
     let hasher = HasherConfig::new().to_hasher();
     let hash = hasher.hash_image(&image);
+    Ok(hash.to_base64())
+}
+
+// libvips must be initialized once per process before any operation. Dropping
+// the `VipsApp` calls `vips_shutdown`, which would break later calls, so we keep
+// it alive for the whole process lifetime via `mem::forget`.
+#[cfg(feature = "phash-heif")]
+fn ensure_vips_initialized() {
+    use std::sync::Once;
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        let app = libvips::VipsApp::new("image_info", false)
+            .expect("failed to initialize libvips (VipsApp)");
+        std::mem::forget(app);
+    });
+}
+
+#[cfg(feature = "phash-heif")]
+pub fn calculate_phash_vips(path: &str) -> Result<String, String> {
+    ensure_vips_initialized();
+
+    let image = libvips::VipsImage::new_from_file(path)
+        .map_err(|e| format!("Vips load error: {:?}", e))?;
+
+    let jpeg_bytes = libvips::ops::jpegsave_buffer_with_opts(
+        &image,
+        &libvips::ops::JpegsaveBufferOptions {
+            q: 85,
+            ..Default::default()
+        },
+    )
+    .map_err(|e| format!("Vips export error: {:?}", e))?;
+
+    let dyn_img = image::load_from_memory(&jpeg_bytes)
+        .map_err(|e| format!("Image decode error: {:?}", e))?;
+
+    let hasher = HasherConfig::new().to_hasher();
+    let hash = hasher.hash_image(&dyn_img);
+
     Ok(hash.to_base64())
 }
 
