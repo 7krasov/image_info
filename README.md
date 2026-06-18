@@ -24,19 +24,33 @@ image_info = {version = "0.3.1", default-features = false}
 
 ```
 
-AVIF format support
+AVIF format support (requires the native **dav1d** library):
 ```toml
 [dependencies]
-image_info = {version = "0.3.1", features = ["phash-avif"]}
+image_info = {version = "0.3.3", features = ["phash-avif"]}
+```
+```bash
+# Debian/Ubuntu
+apt install libdav1d-dev pkg-config
+# macOS
+brew install dav1d pkg-config
 ```
 
-HEIF format support
+HEIF format support (requires the native **libvips** library):
 ```toml
 [dependencies]
-image_info = {version = "0.3.1", features = ["phash-heif"]}
+image_info = {version = "0.3.3", features = ["phash-heif"]}
+```
+```bash
+# Debian/Ubuntu
+apt install libvips-dev pkg-config
+# macOS
+brew install vips pkg-config
 ```
 
-*Make sure you have installed appropriate libraries!*
+The system libraries above are needed at both build and run time. They are only
+required for the corresponding feature — the default build and the plain `phash`
+feature do not need them.
 
 ## Usage
 
